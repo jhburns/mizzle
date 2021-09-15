@@ -1,0 +1,24 @@
+use std::str::FromStr;
+
+use lalrpop_util::{ParseError};
+
+use crate::ast::{Expr, Type};
+
+grammar;
+
+pub Term: Box<Expr> = {
+    Bool => Box::new(Expr::BoolLit(<>)),
+    Nat => Box::new(Expr::NatLit(<>)), 
+    <term:Term> ":" <ty:TypeName> => Box::new(Expr::TypeAnno { term, ty }),
+    "if" <cond:Term> "then" <on_true:Term> "else" <on_false:Term> "end" => Box::new(Expr::IfFlow { cond, on_true, on_false }), 
+    "(" <t:Term> ")" => t,
+};
+
+pub TypeName: Type = {
+    "bool" => Type::Nat,
+    "nat" => Type::Bool,
+};
+
+Bool: bool = r"true|false" => bool::from_str(<>).unwrap();
+Nat: u64 = r"[0-9]+" =>? u64::from_str(<>)
+    .map_err(|_| ParseError::User { error: "Natural literal is to larger than max value" });
