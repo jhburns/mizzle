@@ -79,12 +79,13 @@ fn loc_to_pnt(source: &Vec<String>, mut l: usize) -> (usize, usize) {
     loop {
         // If we reach the end of the file,
         // Return a point one after the last character of the last line
-        if i >= line_lengths.len() - 1 {
+        if i > line_lengths.len() - 1 {
+            i = line_lengths.len() - 1;
             l = line_lengths[line_lengths.len() - 1];
             break
         }
 
-        if l <= line_lengths[i] {
+        if l < line_lengths[i] {
             break 
         }
 
@@ -128,5 +129,22 @@ pub fn format_parse_err(err: ParseError<usize, Token<'_>, &'static str>, source:
             )
         },
         _ => todo!(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn location_coversion() {
+        let source =
+r#"abc
+df"#.split("\n").map(|s| s.into()).collect::<Vec<String>>();
+
+        assert_eq!(loc_to_pnt(&source, 0), (0, 0));
+        assert_eq!(loc_to_pnt(&source, 2), (0, 2));
+        assert_eq!(loc_to_pnt(&source, 3), (1, 0));
+        assert_eq!(loc_to_pnt(&source, 5), (1, 2));
     }
 }
