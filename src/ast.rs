@@ -61,15 +61,19 @@ impl Display for Expr {
 // TODO: add "or" for multiple expected tokens
 // Functions for formatting parser errors
 fn format_expected(expected: Vec<String>) -> String {
-    expected.iter().map(|s| {
-            // Remove first and last character because token are wrapped in parentheses
-            let mut chars = s.chars();
-            chars.next();
-            chars.next_back();
-            chars.as_str()    
-        }).map(|s| format!("`{}`", s))
-        .collect::<Vec<_>>()
-        .join(", ")
+    format!(
+        "{}{}",
+        if expected.len() <= 1 { "" } else { "one of " },
+        expected.iter().map(|s| {
+                // Remove first and last character because token are wrapped in parentheses
+                let mut chars = s.chars();
+                chars.next();
+                chars.next_back();
+                chars.as_str()    
+            }).map(|s| format!("`{}`", s))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
 }
 
 fn loc_to_pnt(source: &Vec<String>, mut l: usize) -> (usize, usize) {
@@ -85,11 +89,12 @@ fn loc_to_pnt(source: &Vec<String>, mut l: usize) -> (usize, usize) {
             break
         }
 
-        if l < line_lengths[i] {
+        if l <= line_lengths[i] {
             break 
         }
 
-        l -= line_lengths[i];
+        // `+ 1` because the newline character is removed when split
+        l -= line_lengths[i] + 1;
         i += 1;
     }
 
@@ -110,7 +115,7 @@ fn format_source(source: &Vec<String>, l1: usize, l2: Option<usize>) -> String {
         source[p1.0],
         " ".repeat(indicator_offset),
         "^".bright_red(),
-        "^".repeat(p2.1 - p1.1).bright_red(),
+        "^".repeat(if p2.1 - p1.1 == 0 { 0 } else { p2.1 - p1.1 - 1 }).bright_red(),
         "here".bright_red()
     )
 }
@@ -119,16 +124,39 @@ pub fn format_parse_err(err: ParseError<usize, Token<'_>, &'static str>, source:
     let error_start = format!("{}: ", "Parse error".bright_red());
     
     match err {
-        ParseError::User { error } => format!("{}{}.", error_start, error),
+        ParseError::InvalidToken { location } => {
+            format!(
+                "{}illegal character(s).\n{}",
+                error_start,
+                format_source(source, location, None)
+            )
+        },
         ParseError::UnrecognizedEOF { location, expected } => {
             format!(
-                "{}expected one of {}, but the file ended.\n{}",
+                "{}file ended, but expected {}.\n{}",
                 error_start,
                 format_expected(expected),
                 format_source(source, location, None)
             )
         },
-        _ => todo!(),
+        ParseError::UnrecognizedToken { token: (l_start, token, l_end), expected } => {
+            format!(
+                "{}`{}` is unexpected, expected {}.\n{}",
+                error_start,
+                token,
+                format_expected(expected),
+                format_source(source, l_start, Some(l_end))
+            )
+        },
+        ParseError::ExtraToken { token: (l_start, token, l_end) } => {
+            format!(
+                "{}extra `{}`.\n{}",
+                error_start,
+                token,
+                format_source(source, l_start, Some(l_end))
+            )
+        },
+        ParseError::User { error } => format!("{}{}.", error_start, error),
     }
 }
 
@@ -144,7 +172,8 @@ df"#.split("\n").map(|s| s.into()).collect::<Vec<String>>();
 
         assert_eq!(loc_to_pnt(&source, 0), (0, 0));
         assert_eq!(loc_to_pnt(&source, 2), (0, 2));
-        assert_eq!(loc_to_pnt(&source, 3), (1, 0));
-        assert_eq!(loc_to_pnt(&source, 5), (1, 2));
+        assert_eq!(loc_to_pnt(&source, 4), (1, 0));
+        assert_eq!(loc_to_pnt(&source, 6), (1, 2));
+        assert_eq!(loc_to_pnt(&source, 20), (1, 2));
     }
 }

@@ -47,7 +47,8 @@ r#"if
 then
     1
 else
-    0"#;
+    0
+end end"#;
         let ss = source.split("\n").map(|s| s.into()).collect::<Vec<String>>();
 
         println!("{}", ast::format_parse_err(unwrap_err(TermParser::new().parse(source)), &ss));
