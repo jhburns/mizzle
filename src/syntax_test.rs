@@ -1,7 +1,8 @@
+// TODO: add error recovery?
+
 #[cfg(test)]
 mod tests {
     use crate::syntax::TermParser;
-    use crate::ast;
 
     #[test]
     fn bool_lit() {
@@ -30,27 +31,8 @@ mod tests {
         assert!(TermParser::new().parse("if true then 1 else 0 end").is_ok());
     }
 
-    // TODO: add error recovery?
-
-    fn unwrap_err<O, E>(r: Result<O, E>) -> E {
-        match r {
-            Result::Ok(_) => todo!(),
-            Result::Err(e) => e,
-        }
-    }
-
     #[test]
     fn scratch() {
-        let source =
-r#"if
-    true
-then
-    1
-else
-    0
-end end"#;
-        let ss = source.split("\n").map(|s| s.into()).collect::<Vec<String>>();
 
-        println!("{}", ast::format_parse_err(unwrap_err(TermParser::new().parse(source)), &ss));
     }
 }
