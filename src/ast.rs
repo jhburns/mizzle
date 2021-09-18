@@ -51,6 +51,6 @@ fn pretty_expr(e: &Expr, indent: usize) -> String {
 
 impl Display for Expr {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        write!(fmt, "{}", pretty_expr(&self, 0))
+        write!(fmt, "{}", pretty_expr(self, 0))
     }
 }
