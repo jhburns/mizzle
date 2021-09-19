@@ -18,6 +18,13 @@ impl<T> Type<T> {
             Type::Bool(_) => Type::Bool(()),
         }
     }
+
+    pub fn extra(&self) -> &T {
+        match self {
+            Type::Nat(e) => e,
+            Type::Bool(e) => e,
+        }
+    }
 }
 
 impl<T> PartialEq for Type<T> {
@@ -48,6 +55,18 @@ pub enum Expr<T> {
     TypeAnno { extra: T, term: Box<Expr<T>>, ty: Type<T> },
     IfFlow { extra: T, cond: Box<Expr<T>>, on_true: Box<Expr<T>>, on_false: Box<Expr<T>> },
     Error,
+}
+
+impl<T> Expr<T> {
+    pub fn extra(&self) -> &T {
+        match self {
+            Expr::NatLit(extra, _) => extra,
+            Expr::BoolLit(extra, _) => extra,
+            Expr::TypeAnno { extra, .. } => extra,
+            Expr::IfFlow { extra, .. } => extra,
+            Expr::Error => panic!("Internal compiler error"),
+        }
+    }
 }
 
 pub type JustExpr = Expr<()>;

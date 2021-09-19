@@ -1,12 +1,24 @@
 use crate::ast;
 
+#[derive(Clone, Debug)]
+pub enum TypeErrors {
+    AnnotationIncorrect { span: ast::Span, got: ast::JustType, annotation: ast::JustType },
+    IfCondMustBeBool { end: usize, got: ast::JustType },
+    IfBranchesMustBeSame { start: usize, first: ast::JustType, second: ast::JustType },
+}
+
+#[derive(Clone, Debug)]
+pub enum TypeWarnings {
+    CondAlways { span: ast::Span, value: bool }
+}
+
 // A customized result type
 #[must_use]
 #[derive(Clone, Debug)]
 pub struct Outcome<A> {
     ok: Option<A>,
-    errors: Vec<String>,
-    warnings: Vec<String>,
+    errors: Vec<TypeErrors>,
+    warnings: Vec<TypeWarnings>,
 }
 
 impl<A> Outcome<A> {
@@ -26,19 +38,19 @@ impl<A> Outcome<A> {
         }
     }
 
-    fn new_err(s: String) -> Outcome<A> {
+    fn new_err(e: TypeErrors) -> Outcome<A> {
         Outcome {
             ok: None,
-            errors: vec![s],
+            errors: vec![e],
             warnings: vec![],
         }
     }
 
-    fn new_warn(s: String) -> Outcome<A> {
+    fn new_warn(w: TypeWarnings) -> Outcome<A> {
         Outcome {
             ok: None,
-            errors: vec![s],
-            warnings: vec![],
+            errors: vec![],
+            warnings: vec![w],
         }
     }
 
@@ -83,25 +95,31 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
         ast::Expr::NatLit(_, _) => Outcome::new(ast::Type::Nat(())),
         ast::Expr::TypeAnno { term, ty, .. } => {
             infer(term).and_then(|term_ty| {
-                    println!("||||{} == {}", term, ty);
                     if term_ty == ty.strip() {
                         Outcome::new_empty()
                     } else {
-                        Outcome::new_err(format!("found `{}` type, but expected `{}` type", term_ty, ty))
+                        Outcome::new_err(TypeErrors::AnnotationIncorrect {
+                            span: *ty.extra(),
+                            got: term_ty,
+                            annotation: ty.strip(),
+                        })
                     }
                 })
                 .set_ok(ty.strip())
         },
-        ast::Expr::IfFlow { cond, on_true, on_false, .. } => {
+        ast::Expr::IfFlow { cond, on_true, on_false, extra } => {
             infer(cond)
                 .and_then(|ty| {
                     if ty.strip() == ast::Type::Bool(()) {
                         match **cond {
-                            ast::Expr::BoolLit(_, b) => Outcome::new_warn(format!("`if` condition is always `{}`", b)),
+                            ast::Expr::BoolLit(span, b) => Outcome::new_warn(TypeWarnings::CondAlways {
+                                span,
+                                value: b 
+                            }),
                             _ => Outcome::new_empty(),
                         }
                     } else {
-                        Outcome::new_err(format!("the type of condition in `if` has to be `bool`, but is `{}`", ty))
+                        Outcome::new_err(TypeErrors::IfCondMustBeBool { end: cond.extra().1, got: ty })
                     }
                 })
                 .set_ok(ast::Type::Bool(()))
@@ -110,11 +128,7 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                     if first == second {
                         Outcome::new(first)
                     } else {
-                        Outcome::new_err(format!(
-                            "branches of `if` must be the same, `{}` does not equal `{}`",
-                            first,
-                            second
-                        ))
+                        Outcome::new_err(TypeErrors::IfBranchesMustBeSame { start: extra.0, first, second })
                     }
                 })
         },
