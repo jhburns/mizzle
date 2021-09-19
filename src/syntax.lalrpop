@@ -15,8 +15,8 @@ pub Term: Box<Expr> = {
 };
 
 pub TypeName: Type = {
-    "bool" => Type::Nat,
-    "nat" => Type::Bool,
+    "bool" => Type::Bool,
+    "nat" => Type::Nat,
 };
 
 Bool: bool = r"true|false" => bool::from_str(<>).unwrap();

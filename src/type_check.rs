@@ -1,14 +1,23 @@
 use crate::ast;
 
 // A customized result type
+#[must_use]
 #[derive(Clone, Debug)]
-struct Outcome<A> {
+pub struct Outcome<A> {
     ok: Option<A>,
     errors: Vec<String>,
     warnings: Vec<String>,
 }
 
 impl<A> Outcome<A> {
+    fn new_empty() -> Outcome<A> {
+        Outcome {
+            ok: None,
+            errors: vec![],
+            warnings: vec![],
+        }    
+    }
+
     fn new(a: A) -> Outcome<A> {
         Outcome {
             ok: Some(a),
@@ -25,15 +34,22 @@ impl<A> Outcome<A> {
         }
     }
 
-    fn with_warn(mut self, s: String) -> Outcome<A> {
-        self.warnings.push(s);
-        self
+    fn new_warn(s: String) -> Outcome<A> {
+        Outcome {
+            ok: None,
+            errors: vec![s],
+            warnings: vec![],
+        }
+    }
+
+    fn set_ok(self, a: A) -> Outcome<A> {
+        Outcome { ok: Some(a), errors: self.errors, warnings: self.warnings}
     }
 
     fn map<B>(self, f: impl FnOnce(A) -> B) -> Outcome<B> {
         match self.ok {
             Some(t) => Outcome { ok: Some(f(t)), errors: self.errors, warnings: self.warnings },
-            None => Outcome { ok: None, errors: self.errors, warnings: self.warnings},
+            None => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
         }
     }
 
@@ -44,10 +60,7 @@ impl<A> Outcome<A> {
                 self.errors.append(&mut outcome.errors);
                 self.warnings.append(&mut outcome.warnings);
 
-                match outcome.ok {
-                    Some(o) => Outcome { ok: Some(o), errors: self.errors, warnings: self.warnings },
-                    None => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
-                }
+                Outcome { ok: outcome.ok, errors: self.errors, warnings: self.warnings }
             },
             None => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
         }
@@ -59,8 +72,52 @@ impl<A> Outcome<A> {
 
         match (self.ok, other.ok) {
             (Some(l), Some(r)) => Outcome { ok: Some((l, r)), errors: self.errors, warnings: self.warnings },
-            (None, _) => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
-            (_, None) => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
+            (_, _) => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
         }
+    }
+}
+
+fn infer(e: &ast::Expr) -> Outcome<ast::Type> {
+    match e {
+        ast::Expr::BoolLit(_) => Outcome::new(ast::Type::Bool),
+        ast::Expr::NatLit(_) => Outcome::new(ast::Type::Nat),
+        ast::Expr::TypeAnno { term, ty } => {
+            infer(term).and_then(|term_ty| {
+                    println!("||||{} == {}", term, ty);
+                    if term_ty == *ty {
+                        Outcome::new_empty()
+                    } else {
+                        Outcome::new_err(format!("found `{}` type, but expected `{}` type", term_ty, ty))
+                    }
+                })
+                .set_ok(*ty)
+        },
+        ast::Expr::IfFlow { cond, on_true, on_false } => {
+            infer(cond)
+                .and_then(|ty| {
+                    if ty == ast::Type::Bool {
+                        match **cond {
+                            ast::Expr::BoolLit(b) => Outcome::new_warn(format!("`if` condition is always `{}`", b)),
+                            _ => Outcome::new_empty(),
+                        }
+                    } else {
+                        Outcome::new_err(format!("the type of condition in `if` has to be `bool`, but is `{}`", ty))
+                    }
+                })
+                .set_ok(ast::Type::Bool)
+                .and_then(|_| infer(on_true).and_zip(infer(on_false)))
+                .and_then(|(first, second)| {
+                    if first == second {
+                        Outcome::new(first)
+                    } else {
+                        Outcome::new_err(format!(
+                            "branches of `if` must be the same, `{}` does not equal `{}`",
+                            first,
+                            second
+                        ))
+                    }
+                })
+        },
+        ast::Expr::Error => panic!("Internal compiler error."),
     }
 }

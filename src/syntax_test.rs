@@ -32,7 +32,8 @@ mod tests {
     }
 
     #[test]
-    fn scratch() {
-
+    fn types() {
+        assert!(TermParser::new().parse("true").is_ok());
+        assert!(TermParser::new().parse("1").is_ok());
     }
 }

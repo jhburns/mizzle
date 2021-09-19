@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display, Error, Formatter};
 // LALRPOP is setup to parse into Expr,
 // `Debug` trait implemented manually to look better
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Type {
     Nat,
     Bool,
