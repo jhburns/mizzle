@@ -77,34 +77,34 @@ impl<A> Outcome<A> {
     }
 }
 
-fn infer(e: &ast::Expr) -> Outcome<ast::Type> {
+fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
     match e {
-        ast::Expr::BoolLit(_) => Outcome::new(ast::Type::Bool),
-        ast::Expr::NatLit(_) => Outcome::new(ast::Type::Nat),
-        ast::Expr::TypeAnno { term, ty } => {
+        ast::Expr::BoolLit(_, _) => Outcome::new(ast::Type::Bool(())),
+        ast::Expr::NatLit(_, _) => Outcome::new(ast::Type::Nat(())),
+        ast::Expr::TypeAnno { term, ty, .. } => {
             infer(term).and_then(|term_ty| {
                     println!("||||{} == {}", term, ty);
-                    if term_ty == *ty {
+                    if term_ty == ty.strip() {
                         Outcome::new_empty()
                     } else {
                         Outcome::new_err(format!("found `{}` type, but expected `{}` type", term_ty, ty))
                     }
                 })
-                .set_ok(*ty)
+                .set_ok(ty.strip())
         },
-        ast::Expr::IfFlow { cond, on_true, on_false } => {
+        ast::Expr::IfFlow { cond, on_true, on_false, .. } => {
             infer(cond)
                 .and_then(|ty| {
-                    if ty == ast::Type::Bool {
+                    if ty.strip() == ast::Type::Bool(()) {
                         match **cond {
-                            ast::Expr::BoolLit(b) => Outcome::new_warn(format!("`if` condition is always `{}`", b)),
+                            ast::Expr::BoolLit(_, b) => Outcome::new_warn(format!("`if` condition is always `{}`", b)),
                             _ => Outcome::new_empty(),
                         }
                     } else {
                         Outcome::new_err(format!("the type of condition in `if` has to be `bool`, but is `{}`", ty))
                     }
                 })
-                .set_ok(ast::Type::Bool)
+                .set_ok(ast::Type::Bool(()))
                 .and_then(|_| infer(on_true).and_zip(infer(on_false)))
                 .and_then(|(first, second)| {
                     if first == second {

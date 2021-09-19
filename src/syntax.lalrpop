@@ -2,21 +2,22 @@ use std::str::FromStr;
 
 use lalrpop_util::{ParseError};
 
-use crate::ast::{Expr, Type};
+use crate::ast::{Span, SpanExpr, SpanType, Expr, Type};
 
 grammar;
 
-pub Term: Box<Expr> = {
-    Bool => Box::new(Expr::BoolLit(<>)),
-    Nat => Box::new(Expr::NatLit(<>)), 
-    <term:Term> ":" <ty:TypeName> => Box::new(Expr::TypeAnno { term, ty }),
-    "if" <cond:Term> "then" <on_true:Term> "else" <on_false:Term> "end" => Box::new(Expr::IfFlow { cond, on_true, on_false }), 
+pub Term: Box<SpanExpr> = {
+    <lo:@L> <b:Bool> <hi:@R> => Box::new(Expr::BoolLit(Span(lo, hi), b)),
+    <lo:@L> <n:Nat> <hi:@R> => Box::new(Expr::NatLit(Span(lo, hi), n)), 
+    <lo:@L> <term:Term> ":" <ty:TypeName> <hi:@R> => Box::new(Expr::TypeAnno { extra: Span(lo, hi), term, ty }),
+    <lo:@L> "if" <cond:Term> "then" <on_true:Term> "else" <on_false:Term> "end" <hi:@R> =>
+        Box::new(Expr::IfFlow { extra: Span(lo, hi), cond, on_true, on_false }), 
     "(" <t:Term> ")" => t,
 };
 
-pub TypeName: Type = {
-    "bool" => Type::Bool,
-    "nat" => Type::Nat,
+pub TypeName: SpanType = {
+    <lo:@L> "bool" <hi:@R> => Type::Bool(Span(lo, hi)),
+    <lo:@L> "nat" <hi:@R> => Type::Nat(Span(lo, hi)),
 };
 
 Bool: bool = r"true|false" => bool::from_str(<>).unwrap();

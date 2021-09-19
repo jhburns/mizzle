@@ -3,37 +3,61 @@ use std::fmt::{Debug, Display, Error, Formatter};
 // LALRPOP is setup to parse into Expr,
 // `Debug` trait implemented manually to look better
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Type {
-    Nat,
-    Bool,
+#[derive(Clone, Copy, Debug)]
+pub enum Type<T> {
+    Nat(T),
+    Bool(T),
 }
 
-impl Display for Type {
+pub type JustType = Type<()>;
+
+impl<T> Type<T> {
+    pub fn strip(&self) -> JustType {
+        match self {
+            Type::Nat(_) => Type::Nat(()),
+            Type::Bool(_) => Type::Bool(()),
+        }
+    }
+}
+
+impl<T> PartialEq for Type<T> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Nat(_), Self::Nat(_)) => true,
+            (Self::Bool(_), Self::Bool(_)) => true,
+            _ => false,
+        }
+    }
+}
+
+impl<T> Eq for Type<T> {}
+
+impl<T> Display for Type<T> {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         match self {
-            Type::Nat => write!(fmt, "nat"),
-            Type::Bool => write!(fmt, "bool"),
+            Type::Nat(_) => write!(fmt, "nat"),
+            Type::Bool(_) => write!(fmt, "bool"),
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub enum Expr {
-    NatLit(u64),
-    BoolLit(bool),
-    TypeAnno { term: Box<Expr>, ty: Type },
-    IfFlow { cond: Box<Expr>, on_true: Box<Expr>, on_false: Box<Expr> },
+pub enum Expr<T> {
+    NatLit(T, u64),
+    BoolLit(T, bool),
+    TypeAnno { extra: T, term: Box<Expr<T>>, ty: Type<T> },
+    IfFlow { extra: T, cond: Box<Expr<T>>, on_true: Box<Expr<T>>, on_false: Box<Expr<T>> },
     Error,
 }
 
+pub type JustExpr = Expr<()>;
 
-fn pretty_expr(e: &Expr, indent: usize) -> String {
+fn pretty_expr<T>(e: &Expr<T>, indent: usize) -> String {
     match e {
-        Expr::NatLit(n) => n.to_string(),
-        Expr::BoolLit(b) => b.to_string(),
-        Expr::TypeAnno { term, ty } => format!("{}: {}", pretty_expr(term, indent), ty.to_string()),
-        Expr::IfFlow { cond, on_true, on_false } => {
+        Expr::NatLit(_, n) => n.to_string(),
+        Expr::BoolLit(_, b) => b.to_string(),
+        Expr::TypeAnno { term, ty, .. } => format!("{}: {}", pretty_expr(term, indent), ty.to_string()),
+        Expr::IfFlow { cond, on_true, on_false, .. } => {
             let indents = "\t".repeat(indent);
             let pretty_cond = pretty_expr(cond, indent);
             let pretty_on_true = pretty_expr(on_true, indent + 1);
@@ -49,8 +73,14 @@ fn pretty_expr(e: &Expr, indent: usize) -> String {
     }
 }
 
-impl Display for Expr {
+impl<T> Display for Expr<T> {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         write!(fmt, "{}", pretty_expr(self, 0))
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct Span(pub usize, pub usize);
+
+pub type SpanType = Type<Span>;
+pub type SpanExpr = Expr<Span>;
