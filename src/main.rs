@@ -5,7 +5,7 @@ mod type_check;
 
 #[macro_use] extern crate lalrpop_util;
 
-// synthesized by LALRPOP
+// Synthesized by LALRPOP
 lalrpop_mod!(pub syntax);
 
 fn main() {

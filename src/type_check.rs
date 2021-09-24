@@ -1,14 +1,14 @@
 use crate::ast;
 
 #[derive(Clone, Debug)]
-pub enum TypeErrors {
+pub enum TypeError {
     AnnotationIncorrect { span: ast::Span, got: ast::JustType, annotation: ast::JustType },
     IfCondMustBeBool { end: usize, got: ast::JustType },
     IfBranchesMustBeSame { start: usize, first: ast::JustType, second: ast::JustType },
 }
 
 #[derive(Clone, Debug)]
-pub enum TypeWarnings {
+pub enum TypeWarning {
     CondAlways { span: ast::Span, value: bool }
 }
 
@@ -16,9 +16,9 @@ pub enum TypeWarnings {
 #[must_use]
 #[derive(Clone, Debug)]
 pub struct Outcome<A> {
-    ok: Option<A>,
-    errors: Vec<TypeErrors>,
-    warnings: Vec<TypeWarnings>,
+    pub ok: Option<A>,
+    pub errors: Vec<TypeError>,
+    pub warnings: Vec<TypeWarning>,
 }
 
 impl<A> Outcome<A> {
@@ -38,7 +38,7 @@ impl<A> Outcome<A> {
         }
     }
 
-    fn new_err(e: TypeErrors) -> Outcome<A> {
+    fn new_err(e: TypeError) -> Outcome<A> {
         Outcome {
             ok: None,
             errors: vec![e],
@@ -46,7 +46,7 @@ impl<A> Outcome<A> {
         }
     }
 
-    fn new_warn(w: TypeWarnings) -> Outcome<A> {
+    fn new_warn(w: TypeWarning) -> Outcome<A> {
         Outcome {
             ok: None,
             errors: vec![],
@@ -89,7 +89,7 @@ impl<A> Outcome<A> {
     }
 }
 
-fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
+pub fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
     match e {
         ast::Expr::BoolLit(_, _) => Outcome::new(ast::Type::Bool(())),
         ast::Expr::NatLit(_, _) => Outcome::new(ast::Type::Nat(())),
@@ -98,7 +98,7 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                     if term_ty == ty.strip() {
                         Outcome::new_empty()
                     } else {
-                        Outcome::new_err(TypeErrors::AnnotationIncorrect {
+                        Outcome::new_err(TypeError::AnnotationIncorrect {
                             span: *ty.extra(),
                             got: term_ty,
                             annotation: ty.strip(),
@@ -112,14 +112,14 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                 .and_then(|ty| {
                     if ty.strip() == ast::Type::Bool(()) {
                         match **cond {
-                            ast::Expr::BoolLit(span, b) => Outcome::new_warn(TypeWarnings::CondAlways {
+                            ast::Expr::BoolLit(span, b) => Outcome::new_warn(TypeWarning::CondAlways {
                                 span,
                                 value: b 
                             }),
                             _ => Outcome::new_empty(),
                         }
                     } else {
-                        Outcome::new_err(TypeErrors::IfCondMustBeBool { end: cond.extra().1, got: ty })
+                        Outcome::new_err(TypeError::IfCondMustBeBool { end: cond.extra().1, got: ty })
                     }
                 })
                 .set_ok(ast::Type::Bool(()))
@@ -128,7 +128,7 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                     if first == second {
                         Outcome::new(first)
                     } else {
-                        Outcome::new_err(TypeErrors::IfBranchesMustBeSame { start: extra.0, first, second })
+                        Outcome::new_err(TypeError::IfBranchesMustBeSame { start: extra.0, first, second })
                     }
                 })
         },
