@@ -1,1 +1,0 @@
-use parity_wasm;

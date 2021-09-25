@@ -25,6 +25,13 @@ impl<T> Type<T> {
             Type::Bool(e) => e,
         }
     }
+
+    pub fn map_extra<U>(&self, f: &Fn(&T) -> U) -> Type<U> {
+        match self {
+            Type::Nat(extra) => Type::Nat(f(extra)),
+            Type::Bool(extra) => Type::Bool(f(extra)),
+        }
+    }
 }
 
 impl<T> PartialEq for Type<T> {
@@ -67,7 +74,26 @@ impl<T> Expr<T> {
             Expr::Error => panic!("Internal compiler error"),
         }
     }
-}
+
+    pub fn map_extra<U>(&self, f: &Fn(&T) -> U) -> Expr<U> {
+        match self {
+            Expr::NatLit(extra, n) => Expr::NatLit(f(extra), *n),
+            Expr::BoolLit(extra, b) => Expr::BoolLit(f(extra), *b),
+            Expr::TypeAnno { extra, term, ty } => Expr::TypeAnno {
+                extra: f(extra),
+                term: Box::new(term.map_extra(f)),
+                ty: ty.map_extra(f)
+            },
+            Expr::IfFlow { extra,  cond, on_true, on_false } => Expr::IfFlow {
+                extra: f(extra),
+                cond: Box::new(cond.map_extra(f)),
+                on_true: Box::new(on_true.map_extra(f)),
+                on_false: Box::new(on_false.map_extra(f)),
+            },
+            Expr::Error => panic!("Internal compiler error"),
+        }
+    }
+ }
 
 pub type JustExpr = Expr<()>;
 

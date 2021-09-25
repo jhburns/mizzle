@@ -137,7 +137,7 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
 }
 
 #[derive(Debug, Clone)]
-struct CheckResult {
+pub struct CheckResult {
     result: Result<ast::JustType, Vec<TypeError>>,
     warnings: Vec<TypeWarning>,
 }
