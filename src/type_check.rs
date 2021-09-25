@@ -15,7 +15,7 @@ pub enum TypeWarning {
 // A customized result type
 #[must_use]
 #[derive(Clone, Debug)]
-pub struct Outcome<A> {
+struct Outcome<A> {
     pub ok: Option<A>,
     pub errors: Vec<TypeError>,
     pub warnings: Vec<TypeWarning>,
@@ -89,7 +89,7 @@ impl<A> Outcome<A> {
     }
 }
 
-pub fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
+fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
     match e {
         ast::Expr::BoolLit(_, _) => Outcome::new(ast::Type::Bool(())),
         ast::Expr::NatLit(_, _) => Outcome::new(ast::Type::Nat(())),
@@ -133,5 +133,21 @@ pub fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                 })
         },
         ast::Expr::Error => panic!("Internal compiler error."),
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CheckResult {
+    result: Result<ast::JustType, Vec<TypeError>>,
+    warnings: Vec<TypeWarning>,
+}
+
+pub fn check(e: &ast::SpanExpr) -> CheckResult {
+    let inferred = infer(e);
+
+    if inferred.errors.len() > 0 {
+        CheckResult { result: Err(inferred.errors), warnings: inferred.warnings }
+    } else {
+        CheckResult { result: Ok(inferred.ok.unwrap()), warnings: inferred.warnings }
     }
 }
