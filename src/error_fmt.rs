@@ -170,10 +170,6 @@ pub fn format_type_warn(w: type_check::TypeWarning, source: &Vec<String>) -> Str
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::syntax::TermParser;
-    use crate::type_check;
-
     #[test]
     fn location_coversion() {
         let source =
