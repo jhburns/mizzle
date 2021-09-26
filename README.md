@@ -8,6 +8,16 @@ mizzle is created with:
 - [parity-wasm](https://crates.io/crates/parity-wasm) used for backend code generation
 - [wasmer](https://crates.io/crates/wasmer/) with the [cranelift compiler](https://crates.io/crates/wasmer-compiler-cranelift) as the runtime
 
+## Everything Possible
+
+```
+if true : bool then
+    2
+else
+    3 : int
+end
+```
+
 ## Using
 
 Install with `cargo install mizzle --path="/"` in this directory.
