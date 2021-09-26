@@ -32,14 +32,14 @@ fn main() -> std::io::Result<()> {
             let check_result = type_check::check(&a);
 
             for warning in check_result.warnings {
-                println!("{}\n\n", error_fmt::format_type_warn(warning, &source_lines));
+                print!("{}\n\n", error_fmt::format_type_warn(warning, &source_lines));
             }
 
             match check_result.result {
                 Ok(final_ty) => wasm::eval(wasm::ast_to_wasm(&a.map_extra(&|_| ())), &final_ty),
                 Err(errors) => {
                     for error in errors {
-                        println!("{}\n\n", error_fmt::format_type_err(error, &source_lines));
+                        print!("{}\n\n", error_fmt::format_type_err(error, &source_lines));
                     }
                 }
             }
