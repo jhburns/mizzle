@@ -26,7 +26,7 @@ impl<T> Type<T> {
         }
     }
 
-    pub fn map_extra<U>(&self, f: &Box<dyn Fn(&T) -> U>) -> Type<U> {
+    pub fn map_extra<U>(&self, f: &dyn Fn(&T) -> U) -> Type<U> {
         match self {
             Type::Int(extra) => Type::Int(f(extra)),
             Type::Bool(extra) => Type::Bool(f(extra)),
@@ -75,7 +75,7 @@ impl<T> Expr<T> {
         }
     }
 
-    pub fn map_extra<U>(&self, f: &Box<dyn Fn(&T) -> U>) -> Expr<U> {
+    pub fn map_extra<U>(&self, f: &dyn Fn(&T) -> U) -> Expr<U> {
         match self {
             Expr::IntLit(extra, n) => Expr::IntLit(f(extra), *n),
             Expr::BoolLit(extra, b) => Expr::BoolLit(f(extra), *b),

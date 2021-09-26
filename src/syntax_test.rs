@@ -15,9 +15,12 @@ mod tests {
         assert!(TermParser::new().parse("0").is_ok());
 
         let max = &i64::MAX.to_string();
+        let min = &i64::MIN.to_string();
         assert!(TermParser::new().parse(max).is_ok());
-        assert!(TermParser::new().parse("-1").is_err());
+        assert!(TermParser::new().parse(min).is_ok());
+
         assert!(TermParser::new().parse(&((i64::MAX as i128) + 1).to_string()).is_err());
+        assert!(TermParser::new().parse(&((i64::MIN as i128) - 1).to_string()).is_err());
     }
 
     #[test]

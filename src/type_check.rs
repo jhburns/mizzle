@@ -54,15 +54,15 @@ impl<A> Outcome<A> {
         }
     }
 
-    fn set_ok(self, a: A) -> Outcome<A> {
-        Outcome { ok: Some(a), errors: self.errors, warnings: self.warnings}
-    }
-
     fn map<B>(self, f: impl FnOnce(A) -> B) -> Outcome<B> {
         match self.ok {
             Some(t) => Outcome { ok: Some(f(t)), errors: self.errors, warnings: self.warnings },
             None => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
         }
+    }
+
+    fn set_ok(self, a: A) -> Outcome<A> {
+        self.map(|_| a)
     }
 
     fn and_then<B>(mut self, f: impl FnOnce(A) -> Outcome<B>) -> Outcome<B> {
@@ -138,8 +138,8 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
 
 #[derive(Debug, Clone)]
 pub struct CheckResult {
-    result: Result<ast::JustType, Vec<TypeError>>,
-    warnings: Vec<TypeWarning>,
+    pub result: Result<ast::JustType, Vec<TypeError>>,
+    pub warnings: Vec<TypeWarning>,
 }
 
 pub fn check(e: &ast::SpanExpr) -> CheckResult {
