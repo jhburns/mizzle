@@ -91,8 +91,8 @@ impl<A> Outcome<A> {
 
 fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
     match e {
+        ast::Expr::IntLit(_, _) => Outcome::new(ast::Type::Int(())),
         ast::Expr::BoolLit(_, _) => Outcome::new(ast::Type::Bool(())),
-        ast::Expr::NatLit(_, _) => Outcome::new(ast::Type::Nat(())),
         ast::Expr::TypeAnno { term, ty, .. } => {
             infer(term).and_then(|term_ty| {
                     if term_ty == ty.strip() {

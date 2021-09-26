@@ -5,7 +5,7 @@ use std::fmt::{Debug, Display, Error, Formatter};
 
 #[derive(Clone, Copy, Debug)]
 pub enum Type<T> {
-    Nat(T),
+    Int(T),
     Bool(T),
 }
 
@@ -14,21 +14,21 @@ pub type JustType = Type<()>;
 impl<T> Type<T> {
     pub fn strip(&self) -> JustType {
         match self {
-            Type::Nat(_) => Type::Nat(()),
+            Type::Int(_) => Type::Int(()),
             Type::Bool(_) => Type::Bool(()),
         }
     }
 
     pub fn extra(&self) -> &T {
         match self {
-            Type::Nat(e) => e,
+            Type::Int(e) => e,
             Type::Bool(e) => e,
         }
     }
 
     pub fn map_extra<U>(&self, f: &Box<dyn Fn(&T) -> U>) -> Type<U> {
         match self {
-            Type::Nat(extra) => Type::Nat(f(extra)),
+            Type::Int(extra) => Type::Int(f(extra)),
             Type::Bool(extra) => Type::Bool(f(extra)),
         }
     }
@@ -37,7 +37,7 @@ impl<T> Type<T> {
 impl<T> PartialEq for Type<T> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Nat(_), Self::Nat(_)) => true,
+            (Self::Int(_), Self::Int(_)) => true,
             (Self::Bool(_), Self::Bool(_)) => true,
             _ => false,
         }
@@ -49,7 +49,7 @@ impl<T> Eq for Type<T> {}
 impl<T> Display for Type<T> {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         match self {
-            Type::Nat(_) => write!(fmt, "nat"),
+            Type::Int(_) => write!(fmt, "int"),
             Type::Bool(_) => write!(fmt, "bool"),
         }
     }
@@ -57,7 +57,7 @@ impl<T> Display for Type<T> {
 
 #[derive(Clone, Debug)]
 pub enum Expr<T> {
-    NatLit(T, u64),
+    IntLit(T, i64),
     BoolLit(T, bool),
     TypeAnno { extra: T, term: Box<Expr<T>>, ty: Type<T> },
     IfFlow { extra: T, cond: Box<Expr<T>>, on_true: Box<Expr<T>>, on_false: Box<Expr<T>> },
@@ -67,7 +67,7 @@ pub enum Expr<T> {
 impl<T> Expr<T> {
     pub fn extra(&self) -> &T {
         match self {
-            Expr::NatLit(extra, _) => extra,
+            Expr::IntLit(extra, _) => extra,
             Expr::BoolLit(extra, _) => extra,
             Expr::TypeAnno { extra, .. } => extra,
             Expr::IfFlow { extra, .. } => extra,
@@ -77,7 +77,7 @@ impl<T> Expr<T> {
 
     pub fn map_extra<U>(&self, f: &Box<dyn Fn(&T) -> U>) -> Expr<U> {
         match self {
-            Expr::NatLit(extra, n) => Expr::NatLit(f(extra), *n),
+            Expr::IntLit(extra, n) => Expr::IntLit(f(extra), *n),
             Expr::BoolLit(extra, b) => Expr::BoolLit(f(extra), *b),
             Expr::TypeAnno { extra, term, ty } => Expr::TypeAnno {
                 extra: f(extra),
@@ -99,7 +99,7 @@ pub type JustExpr = Expr<()>;
 
 fn pretty_expr<T>(e: &Expr<T>, indent: usize) -> String {
     match e {
-        Expr::NatLit(_, n) => n.to_string(),
+        Expr::IntLit(_, n) => n.to_string(),
         Expr::BoolLit(_, b) => b.to_string(),
         Expr::TypeAnno { term, ty, .. } => format!("{}: {}", pretty_expr(term, indent), ty.to_string()),
         Expr::IfFlow { cond, on_true, on_false, .. } => {

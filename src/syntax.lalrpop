@@ -8,7 +8,7 @@ grammar;
 
 pub Term: Box<SpanExpr> = {
     <lo:@L> <b:Bool> <hi:@R> => Box::new(Expr::BoolLit(Span(lo, hi), b)),
-    <lo:@L> <n:Nat> <hi:@R> => Box::new(Expr::NatLit(Span(lo, hi), n)), 
+    <lo:@L> <n:Int> <hi:@R> => Box::new(Expr::IntLit(Span(lo, hi), n)), 
     <lo:@L> <term:Term> ":" <ty:TypeName> <hi:@R> => Box::new(Expr::TypeAnno { extra: Span(lo, hi), term, ty }),
     <lo:@L> "if" <cond:Term> "then" <on_true:Term> "else" <on_false:Term> "end" <hi:@R> =>
         Box::new(Expr::IfFlow { extra: Span(lo, hi), cond, on_true, on_false }), 
@@ -17,9 +17,9 @@ pub Term: Box<SpanExpr> = {
 
 pub TypeName: SpanType = {
     <lo:@L> "bool" <hi:@R> => Type::Bool(Span(lo, hi)),
-    <lo:@L> "nat" <hi:@R> => Type::Nat(Span(lo, hi)),
+    <lo:@L> "int" <hi:@R> => Type::Int(Span(lo, hi)),
 };
 
 Bool: bool = r"true|false" => bool::from_str(<>).unwrap();
-Nat: u64 = r"[0-9]+" =>? u64::from_str(<>)
-    .map_err(|_| ParseError::User { error: "Natural literal is to larger than max value" });
+Int: i64 = r"[0-9]+" =>? i64::from_str(<>)
+    .map_err(|_| ParseError::User { error: "Integer literal is outside of integer range" });

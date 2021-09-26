@@ -2,6 +2,7 @@ use parity_wasm;
 use parity_wasm::elements;
 
 use wasmer;
+use wasmer_compiler_cranelift;
 
 use crate::ast;
 
@@ -29,7 +30,10 @@ pub fn expr_to_ins(a: &ast::JustExpr) -> Vec<elements::Instruction> {
 }
 
 pub fn ast_to_wasm(a: &ast::JustExpr) -> elements::Module {
-    let ins = elements::Instructions::new(expr_to_ins(a));
+    let mut ins = expr_to_ins(a);
+
+    // Functions have to finish with an `End` instruction
+    ins.push(elements::Instruction::End);
 
     parity_wasm::builder::module()
         .function()
@@ -38,7 +42,7 @@ pub fn ast_to_wasm(a: &ast::JustExpr) -> elements::Module {
                 .build()
 
             .body()
-                .with_instructions(ins)
+                .with_instructions(elements::Instructions::new(ins))
                 .build()
 
             .build()
@@ -52,29 +56,20 @@ pub fn ast_to_wasm(a: &ast::JustExpr) -> elements::Module {
 		.build()
 }
 
-/*Copub fn eval(m: &elements::Module) {
-    let store = wasmer::Store::default();
-    let module = wasmer::Module::new(&store, m.to_bytes().unwrap()).unwrap();
+pub fn eval(parity_module: elements::Module, final_ty: &ast::JustType) {
+    let compiler = wasmer_compiler_cranelift::Cranelift::new();
+    let store = wasmer::Store::new(&wasmer::Universal::new(compiler).engine());
+    let module = wasmer::Module::from_binary(&store, &parity_module.to_bytes().unwrap()).unwrap();
 
-    // The module doesn't import anything, so we create an empty import object.
-    let import_object = imports! {};
-    let instance = wasmer::Instance::new(module_bytes, &import_object)?;
+    let import_object = wasmer::imports! {};
+    let instance = wasmer::Instance::new(&module, &import_object).unwrap();
 
     let main = instance.exports.get_function("main").unwrap();
     let output = main.call(&[]).unwrap();
     
-    match output {
-        wasmer::Value::I64(n) => println!("{}", n),
-        _ => panic("Internal compiler error"),
-    }
-}*/
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn scratch() {
-
+    match (&output[0], final_ty) {
+        (wasmer::Value::I64(n), ast::Type::Int(_)) => println!("{}", n),
+        (wasmer::Value::I64(n), ast::Type::Bool(_)) => println!("{}", n == &1),
+        _ => panic!("Internal compiler error"),
     }
 }
