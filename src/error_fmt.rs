@@ -126,7 +126,7 @@ pub fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String
     match e {
         type_check::TypeError::AnnotationIncorrect { span, got, annotation } => {
             format!(
-                "{} type is `{}`, but annotation is `{}`.\n{}",
+                "{}type is `{}`, but annotation is `{}`.\n{}",
                 prefix,
                 got,
                 annotation,
@@ -135,7 +135,7 @@ pub fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String
         },
         type_check::TypeError::IfCondMustBeBool { end, got } => {
             format!(
-                "{} the condition of `if` should be `bool`, but is `{}`.\n{}",
+                "{}the condition of `if` should be `bool`, but is `{}`.\n{}",
                 prefix,
                 got,
                 format_source(source, end - 1, None, AccentColor::Error)
@@ -143,7 +143,7 @@ pub fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String
         },
         type_check::TypeError::IfBranchesMustBeSame { start, first, second } => {
             format!(
-                "{} branches of `if` have to return the same type, `{}` is not equal to `{}`.\n{}",
+                "{}branches of `if` have to return the same type, `{}` is not equal to `{}`.\n{}",
                 prefix,
                 first,
                 second,
