@@ -79,7 +79,7 @@ impl<A> Outcome<A> {
         }
     }
 
-    fn and_zip<B: std::fmt::Debug>(mut self, mut other: Outcome<B>) -> Outcome<(A, B)> {
+    fn and_zip<B>(mut self, mut other: Outcome<B>) -> Outcome<(A, B)> {
         self.errors.append(&mut other.errors);
         self.warnings.append(&mut other.warnings);
 
