@@ -5,7 +5,6 @@ use colored::*;
 
 use crate::type_check;
 
-// TODO: add "or" for multiple expected tokens
 // Functions for formatting parser errors
 fn format_expected(expected: Vec<String>) -> String {
     format!(

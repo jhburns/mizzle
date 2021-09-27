@@ -16,7 +16,7 @@ pub enum TypeWarning {
 #[must_use]
 #[derive(Clone, Debug)]
 struct Outcome<A> {
-    pub ok: Option<A>,
+    pub result: Option<A>,
     pub errors: Vec<TypeError>,
     pub warnings: Vec<TypeWarning>,
 }
@@ -24,7 +24,7 @@ struct Outcome<A> {
 impl<A> Outcome<A> {
     fn new_empty() -> Outcome<A> {
         Outcome {
-            ok: None,
+            result: None,
             errors: vec![],
             warnings: vec![],
         }    
@@ -32,7 +32,7 @@ impl<A> Outcome<A> {
 
     fn new(a: A) -> Outcome<A> {
         Outcome {
-            ok: Some(a),
+            result: Some(a),
             errors: vec![],
             warnings: vec![],
         }
@@ -40,7 +40,7 @@ impl<A> Outcome<A> {
 
     fn new_err(e: TypeError) -> Outcome<A> {
         Outcome {
-            ok: None,
+            result: None,
             errors: vec![e],
             warnings: vec![],
         }
@@ -48,34 +48,34 @@ impl<A> Outcome<A> {
 
     fn new_warn(w: TypeWarning) -> Outcome<A> {
         Outcome {
-            ok: None,
+            result: None,
             errors: vec![],
             warnings: vec![w],
         }
     }
 
-    fn set_ok(self, a: A) -> Outcome<A> {
-        Outcome { ok: Some(a), errors: self.errors, warnings: self.warnings }
+    fn set_result(self, a: A) -> Outcome<A> {
+        Outcome { result: Some(a), errors: self.errors, warnings: self.warnings }
     }
 
     #[allow(dead_code)]
     fn map<B>(self, f: impl FnOnce(A) -> B) -> Outcome<B> {
-        match self.ok {
-            Some(t) => Outcome { ok: Some(f(t)), errors: self.errors, warnings: self.warnings },
-            None => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
+        match self.result {
+            Some(t) => Outcome { result: Some(f(t)), errors: self.errors, warnings: self.warnings },
+            None => Outcome { result: None, errors: self.errors, warnings: self.warnings },
         }
     }
 
     fn and_then<B>(mut self, f: impl FnOnce(A) -> Outcome<B>) -> Outcome<B> {
-        match self.ok {
+        match self.result {
             Some(o) => {
                 let mut outcome = f(o);
                 self.errors.append(&mut outcome.errors);
                 self.warnings.append(&mut outcome.warnings);
 
-                Outcome { ok: outcome.ok, errors: self.errors, warnings: self.warnings }
+                Outcome { result: outcome.result, errors: self.errors, warnings: self.warnings }
             },
-            None => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
+            None => Outcome { result: None, errors: self.errors, warnings: self.warnings },
         }
     }
 
@@ -83,9 +83,9 @@ impl<A> Outcome<A> {
         self.errors.append(&mut other.errors);
         self.warnings.append(&mut other.warnings);
 
-        match (self.ok, other.ok) {
-            (Some(l), Some(r)) => Outcome { ok: Some((l, r)), errors: self.errors, warnings: self.warnings },
-            (_, _) => Outcome { ok: None, errors: self.errors, warnings: self.warnings },
+        match (self.result, other.result) {
+            (Some(l), Some(r)) => Outcome { result: Some((l, r)), errors: self.errors, warnings: self.warnings },
+            (_, _) => Outcome { result: None, errors: self.errors, warnings: self.warnings },
         }
     }
 }
@@ -106,7 +106,7 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                         })
                     }
                 })
-                .set_ok(ty.strip())
+                .set_result(ty.strip())
         },
         ast::Expr::IfFlow { cond, on_true, on_false, extra } => {
             infer(cond)
@@ -123,7 +123,7 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                         Outcome::new_err(TypeError::IfCondMustBeBool { end: cond.extra().1, got: ty })
                     }
                 })
-                .set_ok(ast::Type::Bool(()))
+                .set_result(ast::Type::Bool(()))
                 .and_then(|_| infer(on_true).and_zip(infer(on_false)))
                 .and_then(|(first, second)| {
                     if first == second {
@@ -149,6 +149,6 @@ pub fn check(e: &ast::SpanExpr) -> CheckResult {
     if inferred.errors.len() > 0 {
         CheckResult { result: Err(inferred.errors), warnings: inferred.warnings }
     } else {
-        CheckResult { result: Ok(inferred.ok.unwrap()), warnings: inferred.warnings }
+        CheckResult { result: Ok(inferred.result.unwrap()), warnings: inferred.warnings }
     }
 }

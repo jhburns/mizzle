@@ -1,5 +1,3 @@
-// TODO: add error recovery?
-
 #[cfg(test)]
 mod tests {
     use crate::syntax::TermParser;
