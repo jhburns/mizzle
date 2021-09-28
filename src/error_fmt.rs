@@ -119,7 +119,7 @@ pub fn format_parse_err(err: ParseError<usize, Token<'_>, &'static str>, source:
     }
 }
 
-pub fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String {
+fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String {
     let prefix = format!("{}: ", "Type error".bright_red());
 
     match e {
@@ -152,7 +152,7 @@ pub fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String
     }
 }
 
-pub fn format_type_warn(w: type_check::TypeWarning, source: &Vec<String>) -> String {
+fn format_type_warn(w: type_check::TypeWarning, source: &Vec<String>) -> String {
     let prefix = format!("{}: ", "Warning".truecolor(255, 165, 0));
 
     match w {
@@ -164,6 +164,13 @@ pub fn format_type_warn(w: type_check::TypeWarning, source: &Vec<String>) -> Str
                 format_source(source, span.0, Some(span.1), AccentColor::Warning)
             )
         }
+    }
+}
+
+pub fn format_type_issue(ti: type_check::TypeIssue, source: &Vec<String>) -> String {
+    match ti {
+        type_check::TypeIssue::Error(e) => format_type_err(e, source),
+        type_check::TypeIssue::Warning(w) => format_type_warn(w, source),
     }
 }
 

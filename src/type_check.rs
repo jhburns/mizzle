@@ -1,4 +1,5 @@
 use crate::ast;
+use std::cmp::Ordering;
 
 #[derive(Clone, Debug)]
 pub enum TypeError {
@@ -7,9 +8,62 @@ pub enum TypeError {
     IfBranchesMustBeSame { start: usize, first: ast::JustType, second: ast::JustType },
 }
 
+impl TypeError {
+    fn first_location(&self) -> usize {
+        match self {
+            TypeError::AnnotationIncorrect { span, .. } => span.0,
+            TypeError::IfCondMustBeBool { end, .. } => *end,
+            TypeError::IfBranchesMustBeSame { start, .. } => *start,        
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum TypeWarning {
     CondAlways { span: ast::Span, value: bool }
+}
+
+impl TypeWarning {
+    fn first_location(&self) -> usize {
+        match self {
+            TypeWarning::CondAlways { span, .. } => span.0,        
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum TypeIssue {
+    Error(TypeError),
+    Warning(TypeWarning),
+}
+
+impl TypeIssue {
+    fn first_location(&self) -> usize {
+        match self {
+            TypeIssue::Error(e) => e.first_location(),
+            TypeIssue::Warning(w) => w.first_location(),        
+        }
+    }
+}
+
+impl PartialEq for TypeIssue {
+    fn eq(&self, other: &Self) -> bool {
+        self.first_location() == other.first_location()
+    }
+}
+
+impl Eq for TypeIssue {}
+
+impl PartialOrd for TypeIssue {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.first_location().cmp(&other.first_location()))
+    }
+}
+
+impl Ord for TypeIssue {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.first_location().cmp(&other.first_location())
+    }
 }
 
 // A customized result type

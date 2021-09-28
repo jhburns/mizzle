@@ -31,19 +31,40 @@ fn main() -> std::io::Result<()> {
         Ok(a) => {
             let check_result = type_check::check(&a);
 
-            for warning in check_result.warnings {
-                print!("{}\n\n", error_fmt::format_type_warn(warning, &source_lines));
-            }
+            let mut issues = vec![];
+
+            let mut warn_issues = check_result
+                .warnings
+                .into_iter()
+                .map(|w| type_check::TypeIssue::Warning(w))
+                .collect::<Vec<_>>();
+
+            issues.append(&mut warn_issues);
 
             match check_result.result {
-                Ok(final_ty) => wasm::eval(wasm::ast_to_wasm(&a.map_extra(&|_| ())), &final_ty),
-                Err(errors) => {
-                    for error in errors {
-                        print!("{}\n\n", error_fmt::format_type_err(error, &source_lines));
-                    }
-                }
-            }
+                Ok(final_ty) => {
+                    issues.sort();
 
+                    for issue in issues {
+                        print!("{}\n\n", error_fmt::format_type_issue(issue, &source_lines));
+                    }
+
+                    wasm::eval(wasm::ast_to_wasm(&a.map_extra(&|_| ())), &final_ty)
+                },
+                Err(errors) => {
+                    let mut err_issues = errors
+                        .into_iter()
+                        .map(|e| type_check::TypeIssue::Error(e))
+                        .collect::<Vec<_>>();
+
+                    issues.append(&mut err_issues);
+                    issues.sort();
+
+                    for issue in issues {
+                        print!("{}\n\n", error_fmt::format_type_issue(issue, &source_lines));
+                    }
+                },
+            }
         },
         Err(e) => println!("{}\n", error_fmt::format_parse_err(e, &source_lines)),
     }
