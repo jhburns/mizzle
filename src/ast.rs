@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display, Error, Formatter};
 
 // LALRPOP is setup to parse into Expr,
-// `Debug` trait implemented manually to look better
+// `Display` trait implemented manually for pretty printing
 
 #[derive(Clone, Copy, Debug)]
 pub enum Type<T> {
