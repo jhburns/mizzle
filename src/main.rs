@@ -27,7 +27,7 @@ fn main() -> std::io::Result<()> {
 
     let source = fs::read_to_string(filename)?;
     let source_lines = source
-        .split("\n")
+        .split('\n')
         .map(|s| s.into())
         .collect::<Vec<String>>();
 
@@ -40,7 +40,7 @@ fn main() -> std::io::Result<()> {
             let mut warn_issues = check_result
                 .warnings
                 .into_iter()
-                .map(|w| type_check::TypeIssue::Warning(w))
+                .map(type_check::TypeIssue::Warning)
                 .collect::<Vec<_>>();
 
             issues.append(&mut warn_issues);
@@ -58,7 +58,7 @@ fn main() -> std::io::Result<()> {
                 Err(errors) => {
                     let mut err_issues = errors
                         .into_iter()
-                        .map(|e| type_check::TypeIssue::Error(e))
+                        .map(type_check::TypeIssue::Error)
                         .collect::<Vec<_>>();
 
                     issues.append(&mut err_issues);
