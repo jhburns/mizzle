@@ -1,5 +1,5 @@
-use lalrpop_util::{ParseError};
-use lalrpop_util::lexer::{Token};
+use lalrpop_util::lexer::Token;
+use lalrpop_util::ParseError;
 
 use colored::*;
 
@@ -10,13 +10,16 @@ fn format_expected(expected: Vec<String>) -> String {
     format!(
         "{}{}",
         if expected.len() <= 1 { "" } else { "one of " },
-        expected.iter().map(|s| {
+        expected
+            .iter()
+            .map(|s| {
                 // Remove first and last character because token are wrapped in parentheses
                 let mut chars = s.chars();
                 chars.next();
                 chars.next_back();
-                chars.as_str()    
-            }).map(|s| format!("`{}`", s))
+                chars.as_str()
+            })
+            .map(|s| format!("`{}`", s))
             .collect::<Vec<_>>()
             .join(", ")
     )
@@ -32,11 +35,11 @@ fn loc_to_pnt(source: &Vec<String>, mut l: usize) -> (usize, usize) {
         if i > line_lengths.len() - 1 {
             i = line_lengths.len() - 1;
             l = line_lengths[line_lengths.len() - 1];
-            break
+            break;
         }
 
         if l <= line_lengths[i] {
-            break 
+            break;
         }
 
         // `+ 1` because the newline character is removed when split
@@ -64,12 +67,12 @@ fn format_source(source: &Vec<String>, l1: usize, l2: Option<usize>, color: Acce
     let p1 = loc_to_pnt(source, l1);
     let p2 = l2.map(|l| loc_to_pnt(source, l)).unwrap_or(p1);
 
-
     let line_number = format!("{} |", p1.0).bright_blue();
     let indicator_offset = line_number.len() + p1.1;
 
     // Assuming that the points are always on the same line
-    format!("{}{}\n{}{}{}{}",
+    format!(
+        "{}{}\n{}{}{}{}",
         line_number,
         source[p1.0],
         " ".repeat(indicator_offset),
@@ -79,9 +82,12 @@ fn format_source(source: &Vec<String>, l1: usize, l2: Option<usize>, color: Acce
     )
 }
 
-pub fn format_parse_err(err: ParseError<usize, Token<'_>, &'static str>, source: &Vec<String>) -> String {
+pub fn format_parse_err(
+    err: ParseError<usize, Token<'_>, &'static str>,
+    source: &Vec<String>,
+) -> String {
     let prefix = format!("{}: ", "Parse error".bright_red());
-    
+
     match err {
         ParseError::InvalidToken { location } => {
             format!(
@@ -89,7 +95,7 @@ pub fn format_parse_err(err: ParseError<usize, Token<'_>, &'static str>, source:
                 prefix,
                 format_source(source, location, None, AccentColor::Error)
             )
-        },
+        }
         ParseError::UnrecognizedEOF { location, expected } => {
             format!(
                 "{}file ended, but expected {}.\n{}",
@@ -97,8 +103,11 @@ pub fn format_parse_err(err: ParseError<usize, Token<'_>, &'static str>, source:
                 format_expected(expected),
                 format_source(source, location, None, AccentColor::Error)
             )
-        },
-        ParseError::UnrecognizedToken { token: (l_start, token, l_end), expected } => {
+        }
+        ParseError::UnrecognizedToken {
+            token: (l_start, token, l_end),
+            expected,
+        } => {
             format!(
                 "{}`{}` is unexpected, expected {}.\n{}",
                 prefix,
@@ -106,15 +115,17 @@ pub fn format_parse_err(err: ParseError<usize, Token<'_>, &'static str>, source:
                 format_expected(expected),
                 format_source(source, l_start, Some(l_end), AccentColor::Error)
             )
-        },
-        ParseError::ExtraToken { token: (l_start, token, l_end) } => {
+        }
+        ParseError::ExtraToken {
+            token: (l_start, token, l_end),
+        } => {
             format!(
                 "{}extra `{}`.\n{}",
                 prefix,
                 token,
                 format_source(source, l_start, Some(l_end), AccentColor::Error)
             )
-        },
+        }
         ParseError::User { error } => format!("{}{}.", prefix, error),
     }
 }
@@ -123,7 +134,11 @@ fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String {
     let prefix = format!("{}: ", "Type error".bright_red());
 
     match e {
-        type_check::TypeError::AnnotationIncorrect { span, got, annotation } => {
+        type_check::TypeError::AnnotationIncorrect {
+            span,
+            got,
+            annotation,
+        } => {
             format!(
                 "{}type is `{}`, but annotation is `{}`.\n{}",
                 prefix,
@@ -131,7 +146,7 @@ fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String {
                 annotation,
                 format_source(source, span.0, Some(span.1), AccentColor::Error)
             )
-        },
+        }
         type_check::TypeError::IfCondMustBeBool { end, got } => {
             format!(
                 "{}the condition of `if` should be `bool`, but is `{}`.\n{}",
@@ -139,8 +154,12 @@ fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String {
                 got,
                 format_source(source, end - 1, None, AccentColor::Error)
             )
-        },
-        type_check::TypeError::IfBranchesMustBeSame { start, first, second } => {
+        }
+        type_check::TypeError::IfBranchesMustBeSame {
+            start,
+            first,
+            second,
+        } => {
             format!(
                 "{}branches of `if` have to return the same type, `{}` is not equal to `{}`.\n{}",
                 prefix,
@@ -148,7 +167,7 @@ fn format_type_err(e: type_check::TypeError, source: &Vec<String>) -> String {
                 second,
                 format_source(source, start, None, AccentColor::Error)
             )
-        },
+        }
     }
 }
 
@@ -180,9 +199,11 @@ mod tests {
 
     #[test]
     fn location_coversion() {
-        let source =
-r#"abc
-df"#.split("\n").map(|s| s.into()).collect::<Vec<String>>();
+        let source = r#"abc
+df"#
+        .split("\n")
+        .map(|s| s.into())
+        .collect::<Vec<String>>();
 
         assert_eq!(loc_to_pnt(&source, 0), (0, 0));
         assert_eq!(loc_to_pnt(&source, 2), (0, 2));

@@ -59,9 +59,17 @@ impl<T> Display for Type<T> {
 pub enum Expr<T> {
     IntLit(T, i64),
     BoolLit(T, bool),
-    TypeAnno { extra: T, term: Box<Expr<T>>, ty: Type<T> },
-    IfFlow { extra: T, cond: Box<Expr<T>>, on_true: Box<Expr<T>>, on_false: Box<Expr<T>> },
-    Error,
+    TypeAnno {
+        extra: T,
+        term: Box<Expr<T>>,
+        ty: Type<T>,
+    },
+    IfFlow {
+        extra: T,
+        cond: Box<Expr<T>>,
+        on_true: Box<Expr<T>>,
+        on_false: Box<Expr<T>>,
+    },
 }
 
 impl<T> Expr<T> {
@@ -71,7 +79,6 @@ impl<T> Expr<T> {
             Expr::BoolLit(extra, _) => extra,
             Expr::TypeAnno { extra, .. } => extra,
             Expr::IfFlow { extra, .. } => extra,
-            Expr::Error => panic!("Internal compiler error"),
         }
     }
 
@@ -82,18 +89,22 @@ impl<T> Expr<T> {
             Expr::TypeAnno { extra, term, ty } => Expr::TypeAnno {
                 extra: f(extra),
                 term: Box::new(term.map_extra(f)),
-                ty: ty.map_extra(f)
+                ty: ty.map_extra(f),
             },
-            Expr::IfFlow { extra,  cond, on_true, on_false } => Expr::IfFlow {
+            Expr::IfFlow {
+                extra,
+                cond,
+                on_true,
+                on_false,
+            } => Expr::IfFlow {
                 extra: f(extra),
                 cond: Box::new(cond.map_extra(f)),
                 on_true: Box::new(on_true.map_extra(f)),
                 on_false: Box::new(on_false.map_extra(f)),
             },
-            Expr::Error => panic!("Internal compiler error"),
         }
     }
- }
+}
 
 pub type JustExpr = Expr<()>;
 
@@ -101,20 +112,29 @@ fn pretty_expr<T>(e: &Expr<T>, indent: usize) -> String {
     match e {
         Expr::IntLit(_, n) => n.to_string(),
         Expr::BoolLit(_, b) => b.to_string(),
-        Expr::TypeAnno { term, ty, .. } => format!("{}: {}", pretty_expr(term, indent), ty.to_string()),
-        Expr::IfFlow { cond, on_true, on_false, .. } => {
+        Expr::TypeAnno { term, ty, .. } => {
+            format!("{}: {}", pretty_expr(term, indent), ty.to_string())
+        }
+        Expr::IfFlow {
+            cond,
+            on_true,
+            on_false,
+            ..
+        } => {
             let indents = "\t".repeat(indent);
             let pretty_cond = pretty_expr(cond, indent);
             let pretty_on_true = pretty_expr(on_true, indent + 1);
             let pretty_on_false = pretty_expr(on_false, indent + 1);
 
-            format!(r#"if {1} then
+            format!(
+                r#"if {1} then
 {0}	{2}
 {0}else
 {0}	{3}
-{0}end"#, indents, pretty_cond, pretty_on_true, pretty_on_false)
-        },
-        Expr::Error => "error".into(),
+{0}end"#,
+                indents, pretty_cond, pretty_on_true, pretty_on_false
+            )
+        }
     }
 }
 

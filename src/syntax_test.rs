@@ -17,8 +17,12 @@ mod tests {
         assert!(TermParser::new().parse(max).is_ok());
         assert!(TermParser::new().parse(min).is_ok());
 
-        assert!(TermParser::new().parse(&((i64::MAX as i128) + 1).to_string()).is_err());
-        assert!(TermParser::new().parse(&((i64::MIN as i128) - 1).to_string()).is_err());
+        assert!(TermParser::new()
+            .parse(&((i64::MAX as i128) + 1).to_string())
+            .is_err());
+        assert!(TermParser::new()
+            .parse(&((i64::MIN as i128) - 1).to_string())
+            .is_err());
     }
 
     #[test]
