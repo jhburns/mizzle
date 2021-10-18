@@ -1,7 +1,5 @@
 use std::str::FromStr;
 
-use lalrpop_util::{ParseError};
-
 use crate::ast::{Span, SpanExpr, SpanType, Expr, Type};
 
 grammar;
@@ -22,4 +20,4 @@ pub TypeName: SpanType = {
 
 Bool: bool = r"true|false" => bool::from_str(<>).unwrap();
 Int: i64 = r"-?[0-9]+" =>? i64::from_str(<>)
-    .map_err(|_| ParseError::User { error: "Integer literal is outside of integer range" });
+    .map_err(|_| lalrpop_util::ParseError::User { error: "Integer literal is outside of integer range" });

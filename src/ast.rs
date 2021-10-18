@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Error, Formatter};
+use std::fmt;
 
 // LALRPOP is setup to parse into Expr,
 // `Display` trait implemented manually for pretty printing
@@ -46,8 +46,8 @@ impl<T> PartialEq for Type<T> {
 
 impl<T> Eq for Type<T> {}
 
-impl<T> Display for Type<T> {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+impl<T> fmt::Display for Type<T> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
             Type::Int(_) => write!(fmt, "int"),
             Type::Bool(_) => write!(fmt, "bool"),
@@ -138,8 +138,8 @@ fn pretty_expr<T>(e: &Expr<T>, indent: usize) -> String {
     }
 }
 
-impl<T> Display for Expr<T> {
-    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+impl<T> fmt::Display for Expr<T> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(fmt, "{}", pretty_expr(self, 0))
     }
 }
