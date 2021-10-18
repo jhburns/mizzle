@@ -1,8 +1,4 @@
-use parity_wasm;
 use parity_wasm::elements;
-
-use wasmer;
-use wasmer_compiler_cranelift;
 
 use crate::ast;
 
