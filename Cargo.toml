@@ -15,3 +15,8 @@ parity-wasm = "0.42"
 regex = "1"
 wasmer = "2.0.0"
 wasmer-compiler-cranelift = "2.0.0"
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false # Disable features which are enabled by default
+features = ["precommit-hook", "run-cargo-test", "run-cargo-fmt"]
