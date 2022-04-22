@@ -18,8 +18,12 @@ else
 end
 ```
 
+## Example
+
+![Example Mizzle Execution](img/example.png)
+
 ## Using
 
-Install with `$ cargo install mizzle --path="/"` in this directory.
+Install with `$ cargo install mizzle --path="./"` in this directory.
 
 Run with `$ mizzle filename.mi`.

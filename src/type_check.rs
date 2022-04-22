@@ -77,7 +77,9 @@ impl Ord for TypeIssue {
     }
 }
 
-// A customized result type
+// A similar type to `Result`
+// Point of this type is to track errors that may occur
+// And track the currently inferred type if it exists
 #[must_use]
 #[derive(Clone, Debug)]
 struct Outcome<A> {
@@ -87,6 +89,7 @@ struct Outcome<A> {
 }
 
 impl<A> Outcome<A> {
+    // Useful when an error needs to be returned in one branch but not the other
     fn new_empty() -> Outcome<A> {
         Outcome {
             result: None,
@@ -119,7 +122,9 @@ impl<A> Outcome<A> {
         }
     }
 
-    fn set_result(self, a: A) -> Outcome<A> {
+    // Useful for recovering the type checker to continue typechecking
+    // In other words, use this new type but keep the previous errors
+    fn recover_to(self, a: A) -> Outcome<A> {
         Outcome {
             result: Some(a),
             errors: self.errors,
@@ -143,6 +148,8 @@ impl<A> Outcome<A> {
         }
     }
 
+    // Monadic bind, also known as `bind`, `andThen`, `then`, `let*` and `>>=`
+    // In summary: take an `Outcome` then map over it and flatten
     fn and_then<B>(mut self, f: impl FnOnce(A) -> Outcome<B>) -> Outcome<B> {
         match self.result {
             Some(o) => {
@@ -164,6 +171,10 @@ impl<A> Outcome<A> {
         }
     }
 
+    // Monoidal product, also known as `and*`
+    // In summary: take two `Outcome`s,
+    // If they are both successful then return tuple of both values
+    // Otherwise return `None`
     fn and_zip<B>(mut self, mut other: Outcome<B>) -> Outcome<(A, B)> {
         self.errors.append(&mut other.errors);
         self.warnings.append(&mut other.warnings);
@@ -189,6 +200,7 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
         ast::Expr::BoolLit(_, _) => Outcome::new(ast::Type::Bool(())),
         ast::Expr::TypeAnno { term, ty, .. } => infer(term)
             .and_then(|term_ty| {
+                // If inferring the type was successful, then check if the annotation matches the inferred type
                 if term_ty == ty.strip() {
                     Outcome::new_empty()
                 } else {
@@ -199,7 +211,8 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                     })
                 }
             })
-            .set_result(ty.strip()),
+            // Recover to the annotated type no matter what
+            .recover_to(ty.strip()),
         ast::Expr::IfFlow {
             cond,
             on_true,
@@ -207,6 +220,7 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
             extra,
         } => infer(cond)
             .and_then(|ty| {
+                // If inferring the type was successful, then check that condition is of the type `bool`
                 if ty.strip() == ast::Type::Bool(()) {
                     match **cond {
                         ast::Expr::BoolLit(span, b) => {
@@ -221,8 +235,11 @@ fn infer(e: &ast::SpanExpr) -> Outcome<ast::JustType> {
                     })
                 }
             })
-            .set_result(())
+            .recover_to(())
+            // Check if both branches of the if are of the same type
+            // `(_)` means we ignore whatever value is being passes, cause its `Unit` in this case
             .and_then(|_| infer(on_true).and_zip(infer(on_false)))
+            // If they are of different types, don't recover cause it can't be known which one is the "correct" type
             .and_then(|(first, second)| {
                 if first == second {
                     Outcome::new(first)
@@ -243,9 +260,11 @@ pub struct CheckResult {
     pub warnings: Vec<TypeWarning>,
 }
 
+// Wrapper for `infer`, so that it has a safer API
 pub fn check(e: &ast::SpanExpr) -> CheckResult {
     let inferred = infer(e);
 
+    // If there are any errors, then return only the errors
     if inferred.errors.len() > 0 {
         CheckResult {
             result: Err(inferred.errors),
@@ -253,6 +272,7 @@ pub fn check(e: &ast::SpanExpr) -> CheckResult {
         }
     } else {
         CheckResult {
+            // This unwraps the `Some`, since we already verified it should have some value
             result: Ok(inferred.result.unwrap()),
             warnings: inferred.warnings,
         }
